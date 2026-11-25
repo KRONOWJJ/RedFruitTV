@@ -1,21 +1,45 @@
 name: Build tvOS app
+
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - "RedFruitTV/**"
+      - "RedFruitTV.xcodeproj/**"
+      - ".github/workflows/build.yml"
+
+concurrency:
+  group: redfruittv-tvos-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   simulator-build:
+    name: Compile for tvOS Simulator
     runs-on: macos-15
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: List project schemes
+        run: xcodebuild -list -project RedFruitTV.xcodeproj
+
       - name: Build for Apple TV Simulator
         run: |
+          set -o pipefail
           xcodebuild \
             -project RedFruitTV.xcodeproj \
             -scheme RedFruitTV \
             -sdk appletvsimulator \
             -destination 'generic/platform=tvOS Simulator' \
-            -configuration Release \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/RedFruitTVDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             build
