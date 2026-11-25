@@ -1,0 +1,21 @@
+name: Build tvOS app
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for Apple TV Simulator
+        run: |
+          xcodebuild \
+            -project RedFruitTV.xcodeproj \
+            -scheme RedFruitTV \
+            -sdk appletvsimulator \
+            -destination 'generic/platform=tvOS Simulator' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            build
