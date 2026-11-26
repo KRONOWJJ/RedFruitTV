@@ -49,15 +49,53 @@ jobs:
           set -euo pipefail
           APP_PATH="$RUNNER_TEMP/RedFruitTVDerivedData/Build/Products/Debug-appletvsimulator/RedFruitTV.app"
           test -d "$APP_PATH"
-          echo "Bundle identifier:"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$RUNNER_TEMP/RedFruitTV-Simulator.zip"
-          ls -lh "$RUNNER_TEMP/RedFruitTV-Simulator.zip"
 
       - name: Upload simulator app
         uses: actions/upload-artifact@v4
         with:
           name: RedFruitTV-tvOS-Simulator
           path: ${{ runner.temp }}/RedFruitTV-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  device-build:
+    name: Compile for physical Apple TV (unsigned)
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build for physical Apple TV
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project RedFruitTV.xcodeproj \
+            -scheme RedFruitTV \
+            -sdk appletvos \
+            -destination 'generic/platform=tvOS' \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/RedFruitTVDeviceDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Verify and package unsigned device app
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/RedFruitTVDeviceDerivedData/Build/Products/Debug-appletvos/RedFruitTV.app"
+          test -d "$APP_PATH"
+          echo "Bundle identifier:"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
+          echo "Executable architectures:"
+          /usr/bin/file "$APP_PATH/RedFruitTV"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$RUNNER_TEMP/RedFruitTV-Device-Unsigned.zip"
+
+      - name: Upload unsigned device app
+        uses: actions/upload-artifact@v4
+        with:
+          name: RedFruitTV-tvOS-Device-Unsigned
+          path: ${{ runner.temp }}/RedFruitTV-Device-Unsigned.zip
           if-no-files-found: error
           retention-days: 14
