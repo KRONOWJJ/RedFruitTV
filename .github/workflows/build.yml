@@ -43,3 +43,21 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/RedFruitTVDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Verify and package simulator app
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/RedFruitTVDerivedData/Build/Products/Debug-appletvsimulator/RedFruitTV.app"
+          test -d "$APP_PATH"
+          echo "Bundle identifier:"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$RUNNER_TEMP/RedFruitTV-Simulator.zip"
+          ls -lh "$RUNNER_TEMP/RedFruitTV-Simulator.zip"
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: RedFruitTV-tvOS-Simulator
+          path: ${{ runner.temp }}/RedFruitTV-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14
